@@ -1,0 +1,218 @@
+interface Env {
+	AI: Ai;
+	ASSETS: Fetcher;
+}
+
+export default {
+	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+		const url = new URL(request.url);
+		
+		// Handle the root path for our streaming demo
+		if (url.pathname === '/') {
+			return new Response(getIndexHTML(), {
+				headers: { 'Content-Type': 'text/html' }
+			});
+		}
+		
+		// Handle the streaming API endpoint
+		if (url.pathname === '/api/stream' && request.method === 'POST') {
+			try {
+				const { query } = await request.json() as { query: string };
+				
+				if (!query) {
+					return new Response('Query is required', { status: 400 });
+				}
+				
+				// Use your AutoRAG with streaming enabled
+				const result = await env.AI.autorag("aopa-rag").aiSearch({
+					query: query,
+					model: "@cf/meta/llama-3.1-8b-instruct",
+					rewrite_query: true,
+					max_num_results: 5,
+					ranking_options: {
+						score_threshold: 0.3,
+					},
+					stream: true,
+				});
+				
+				// Return the streaming response with appropriate headers
+				return new Response(result, {
+					headers: {
+						'Content-Type': 'text/plain; charset=utf-8',
+						'Cache-Control': 'no-cache',
+						'Connection': 'keep-alive',
+						'Access-Control-Allow-Origin': '*',
+						'Access-Control-Allow-Methods': 'POST, OPTIONS',
+						'Access-Control-Allow-Headers': 'Content-Type',
+					},
+				});
+			} catch (error) {
+				console.error('Error in streaming:', error);
+				return new Response('Internal Server Error', { status: 500 });
+			}
+		}
+		
+		// Handle CORS preflight
+		if (request.method === 'OPTIONS') {
+			return new Response(null, {
+				headers: {
+					'Access-Control-Allow-Origin': '*',
+					'Access-Control-Allow-Methods': 'POST, OPTIONS',
+					'Access-Control-Allow-Headers': 'Content-Type',
+				},
+			});
+		}
+		
+		// Fallback to static assets
+		return env.ASSETS.fetch(request);
+	},
+};
+
+function getIndexHTML(): string {
+	return `<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>AutoRAG Streaming Demo</title>
+	<style>
+		body {
+			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+			max-width: 800px;
+			margin: 0 auto;
+			padding: 20px;
+			line-height: 1.6;
+		}
+		.container {
+			background: #f9f9f9;
+			padding: 20px;
+			border-radius: 8px;
+			margin-bottom: 20px;
+		}
+		textarea {
+			width: 100%;
+			height: 100px;
+			padding: 10px;
+			border: 1px solid #ddd;
+			border-radius: 4px;
+			font-family: inherit;
+			resize: vertical;
+		}
+		button {
+			background: #0066cc;
+			color: white;
+			border: none;
+			padding: 10px 20px;
+			border-radius: 4px;
+			cursor: pointer;
+			font-size: 16px;
+		}
+		button:hover {
+			background: #0052a3;
+		}
+		button:disabled {
+			background: #ccc;
+			cursor: not-allowed;
+		}
+		#response {
+			background: white;
+			border: 1px solid #ddd;
+			border-radius: 4px;
+			padding: 15px;
+			min-height: 100px;
+			white-space: pre-wrap;
+			font-family: 'Courier New', monospace;
+		}
+		.loading {
+			color: #666;
+			font-style: italic;
+		}
+		.error {
+			color: #d32f2f;
+			background: #ffebee;
+			padding: 10px;
+			border-radius: 4px;
+		}
+	</style>
+</head>
+<body>
+	<h1>AutoRAG Streaming Demo</h1>
+	<p>This demo shows streaming responses from your <code>aopa-rag</code> AutoRAG instance.</p>
+	
+	<div class="container">
+		<label for="query">Enter your question:</label>
+		<textarea id="query" placeholder="Ask a question about your data...">What are the key topics in the knowledge base?</textarea>
+		<br><br>
+		<button id="submit" onclick="streamResponse()">Ask Question</button>
+	</div>
+	
+	<div class="container">
+		<h3>Response:</h3>
+		<div id="response">Click "Ask Question" to see a streaming response...</div>
+	</div>
+
+	<script>
+		async function streamResponse() {
+			const query = document.getElementById('query').value.trim();
+			const responseDiv = document.getElementById('response');
+			const submitButton = document.getElementById('submit');
+			
+			if (!query) {
+				responseDiv.innerHTML = '<div class="error">Please enter a question.</div>';
+				return;
+			}
+			
+			// Reset and show loading
+			responseDiv.innerHTML = '<div class="loading">Streaming response...</div>';
+			submitButton.disabled = true;
+			
+			try {
+				const response = await fetch('/api/stream', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({ query }),
+				});
+				
+				if (!response.ok) {
+					throw new Error(\`HTTP error! status: \${response.status}\`);
+				}
+				
+				// Clear loading message
+				responseDiv.innerHTML = '';
+				
+				// Read the stream
+				const reader = response.body?.getReader();
+				const decoder = new TextDecoder();
+				
+				if (reader) {
+					while (true) {
+						const { done, value } = await reader.read();
+						if (done) break;
+						
+						const chunk = decoder.decode(value, { stream: true });
+						responseDiv.innerHTML += chunk;
+						
+						// Auto-scroll to bottom
+						responseDiv.scrollTop = responseDiv.scrollHeight;
+					}
+				}
+			} catch (error) {
+				console.error('Error:', error);
+				responseDiv.innerHTML = \`<div class="error">Error: \${error.message}</div>\`;
+			} finally {
+				submitButton.disabled = false;
+			}
+		}
+		
+		// Allow Enter key to submit
+		document.getElementById('query').addEventListener('keydown', function(e) {
+			if (e.key === 'Enter' && e.ctrlKey) {
+				streamResponse();
+			}
+		});
+	</script>
+</body>
+</html>`;
+}
