@@ -4,7 +4,7 @@
  */
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "golf",
+	"name": "il-g",
 	"main": "./dist/_worker.js/index.js",
 	"compatibility_date": "2025-06-20",
 	"compatibility_flags": [
