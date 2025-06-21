@@ -50,7 +50,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
 											const obj = JSON.parse(jsonStr);
 											// Extract only the 'response' text and stream it
 											if (typeof obj.response === "string") {
-												controller.enqueue(new TextEncoder().encode(obj.response));
+												const chunk = new TextEncoder().encode(obj.response);
+												controller.enqueue(chunk);
+												// Force flush by yielding control
+												await new Promise(resolve => setTimeout(resolve, 0));
 											}
 										} catch {
 											// Ignore invalid JSON lines
