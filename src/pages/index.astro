@@ -23,15 +23,6 @@
 				border-radius: 8px;
 				margin-bottom: 20px;
 			}
-			textarea {
-				width: 100%;
-				height: 100px;
-				padding: 10px;
-				border: 1px solid #ddd;
-				border-radius: 4px;
-				font-family: inherit;
-				resize: vertical;
-			}
 			button {
 				background: #0066cc;
 				color: white;
@@ -74,9 +65,6 @@
 		<p>This demo shows streaming responses from your <code>aopa-rag</code> AutoRAG instance.</p>
 		
 		<div class="container">
-			<label for="query">Enter your question:</label>
-			<textarea id="query" placeholder="Ask a question about your data...">What are the key topics in the knowledge base?</textarea>
-			<br><br>
 			<button id="submit">Ask Question</button>
 		</div>
 		
@@ -88,14 +76,9 @@
 		<script>
 			document.addEventListener('DOMContentLoaded', function() {
 				async function streamResponse() {
-					const query = document.getElementById('query').value.trim();
+					const query = "What are the key topics in the knowledge base?";
 					const responseDiv = document.getElementById('response');
 					const submitButton = document.getElementById('submit');
-					
-					if (!query) {
-						responseDiv.innerHTML = '<div class="error">Please enter a question.</div>';
-						return;
-					}
 					
 					// Reset and show loading
 					responseDiv.innerHTML = '<div class="loading">Streaming response...</div>';
@@ -149,12 +132,6 @@
 				// Add event listener to submit button
 				document.getElementById('submit').addEventListener('click', streamResponse);
 				
-				// Allow Enter key to submit
-				document.getElementById('query').addEventListener('keydown', function(e) {
-					if (e.key === 'Enter' && e.ctrlKey) {
-						streamResponse();
-					}
-				});
 			});
 		</script>
 	</body>
