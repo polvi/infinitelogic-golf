@@ -18,12 +18,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
 		// Use your AutoRAG with streaming enabled
 		const result = await env.AI.autorag("aopa-rag").aiSearch({
 			query: query,
-			model: "@cf/meta/llama-3.3-70b-instruct-sd",
-			rewrite_query: true,
-			max_num_results: 5,
-			ranking_options: {
-				score_threshold: 0.3,
-			},
 			stream: true,
 		});
 		
