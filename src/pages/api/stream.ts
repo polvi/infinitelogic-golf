@@ -1,6 +1,4 @@
 import type { APIRoute } from 'astro';
-import { createWorkersAI } from 'workers-ai-provider';
-import { streamText } from 'ai';
 
 export const POST: APIRoute = async ({ request, locals }) => {
 	try {
@@ -17,22 +15,21 @@ export const POST: APIRoute = async ({ request, locals }) => {
 			return new Response('AI binding not available', { status: 500 });
 		}
 
-		const workersai = createWorkersAI({ binding: env.AI });
-		
-		const result = streamText({
-			model: workersai('@cf/meta/llama-3.1-8b-instruct'),
-			prompt: `Answer this question based on your knowledge: ${query}`,
+		// Use AutoRAG's streaming functionality
+		const result = await env.AI.autorag("aopa-rag").aiSearch({
+			query: query,
+			stream: true,
 		});
 
-		return result.toTextStreamResponse({
+		// Return the streaming response from AutoRAG
+		return new Response(result, {
 			headers: {
-				'Content-Type': 'text/x-unknown',
-				'content-encoding': 'identity',
-				'transfer-encoding': 'chunked',
+				'Content-Type': 'text/plain; charset=utf-8',
+				'Transfer-Encoding': 'chunked',
 			},
 		});
 	} catch (error) {
-		console.error('Stream API error:', error);
+		console.error('AutoRAG Stream API error:', error);
 		return new Response(`Error: ${error.message}`, { status: 500 });
 	}
 };
