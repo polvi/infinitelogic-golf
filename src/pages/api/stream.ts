@@ -22,13 +22,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
 		});
 
 		// Create a transform stream to parse SSE format and extract response text
+		let buffer = '';
 		const transformStream = new TransformStream({
 			transform(chunk, controller) {
 				const decoder = new TextDecoder();
 				const text = decoder.decode(chunk);
 				
-				// Accumulate chunks until we have complete JSON objects
-				let buffer = '';
+				// Split into lines and process each one
 				const lines = text.split('\n');
 				
 				for (const line of lines) {
@@ -42,14 +42,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
 						buffer += dataStr;
 						
 						try {
-							// Try to parse accumulated buffer
 							const data = JSON.parse(buffer);
 							if (data.response) {
-								controller.enqueue(new TextEncoder().encode(data.response));
-								buffer = ''; // Reset buffer after successful parse
+								controller.enqueue(data.response);
+								buffer = '';
 							}
 						} catch (e) {
-							// If parse fails, keep accumulating
+							// Incomplete JSON, continue buffering
 							continue;
 						}
 					}

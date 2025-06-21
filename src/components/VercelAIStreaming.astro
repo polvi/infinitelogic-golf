@@ -38,25 +38,29 @@ const { query } = Astro.props;
 			const reader = response.body.getReader();
 			const decoder = new TextDecoder();
 			
-			// Clear loading message
+			// Clear loading message and create response div
 			container.innerHTML = '<div class="streaming-response"></div>';
 			const responseDiv = container.querySelector('.streaming-response');
 			
 			let accumulatedText = '';
 			
-			while (true) {
-				const { done, value } = await reader.read();
-				
-				if (done) break;
-				
-				const chunk = decoder.decode(value, { stream: true });
-				accumulatedText += chunk;
-				
-				if (responseDiv) {
-					responseDiv.textContent = accumulatedText;
-					// Auto-scroll to bottom if content is long
-					responseDiv.scrollTop = responseDiv.scrollHeight;
+			try {
+				while (true) {
+					const { done, value } = await reader.read();
+					
+					if (done) break;
+					
+					// Decode the chunk
+					const text = decoder.decode(value, { stream: true });
+					accumulatedText += text;
+					
+					if (responseDiv) {
+						responseDiv.textContent = accumulatedText;
+						responseDiv.scrollTop = responseDiv.scrollHeight;
+					}
 				}
+			} finally {
+				reader.releaseLock();
 			}
 		} catch (error) {
 			console.error('AutoRAG Streaming error:', error);
