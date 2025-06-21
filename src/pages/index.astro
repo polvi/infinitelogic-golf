@@ -1,5 +1,5 @@
 ---
-import VercelAIStreaming from '../components/VercelAIStreaming.astro';
+import AutoRAGStream from '../components/AutoRAGStream.astro';
 
 // Get query from URL params for streaming
 const url = new URL(Astro.request.url);
@@ -86,7 +86,7 @@ const query = url.searchParams.get('q') || '';
 		<div class="container">
 			<h3>Response:</h3>
 			{query ? (
-				<VercelAIStreaming query={query} />
+				<AutoRAGStream query={query} />
 			) : (
 				<div class="placeholder">Enter a question above to see a streaming response...</div>
 			)}
