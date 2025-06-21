@@ -21,9 +21,67 @@ export const POST: APIRoute = async ({ request, locals }) => {
 			stream: true,
 		});
 		
-		// The result is already a Response object with a stream, so we need to return it directly
-		// but with our custom headers
-		return new Response(result.body, {
+		if (!result.body?.getReader) {
+			throw new Error("Streaming not supported");
+		}
+		
+		// Create a readable stream that processes the SSE data
+		const stream = new ReadableStream({
+			async start(controller) {
+				const reader = result.body.getReader();
+				const decoder = new TextDecoder();
+				let buffer = "";
+				
+				try {
+					while (true) {
+						const { done, value } = await reader.read();
+						if (done) break;
+						
+						if (value) {
+							buffer += decoder.decode(value, { stream: true });
+							const lines = buffer.split(/\r?\n/);
+							buffer = lines.pop() ?? "";
+							
+							for (const line of lines) {
+								if (line.startsWith("data:")) {
+									const jsonStr = line.slice(5).trim();
+									if (jsonStr) {
+										try {
+											const obj = JSON.parse(jsonStr);
+											// Extract only the 'response' text and stream it
+											if (typeof obj.response === "string") {
+												controller.enqueue(new TextEncoder().encode(obj.response));
+											}
+										} catch {
+											// Ignore invalid JSON lines
+										}
+									}
+								}
+							}
+						}
+					}
+					
+					// Handle any remaining buffered line
+					if (buffer.startsWith("data:")) {
+						const jsonStr = buffer.slice(5).trim();
+						if (jsonStr) {
+							try {
+								const obj = JSON.parse(jsonStr);
+								if (typeof obj.response === "string") {
+									controller.enqueue(new TextEncoder().encode(obj.response));
+								}
+							} catch {}
+						}
+					}
+				} catch (error) {
+					controller.error(error);
+				} finally {
+					controller.close();
+				}
+			}
+		});
+		
+		return new Response(stream, {
 			headers: {
 				'Content-Type': 'text/plain; charset=utf-8',
 				'Cache-Control': 'no-cache',
