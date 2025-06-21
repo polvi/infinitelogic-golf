@@ -35,28 +35,49 @@ const { query } = Astro.props;
 				throw new Error('No response body');
 			}
 
-			const reader = response.body.getReader();
-			const decoder = new TextDecoder();
-			
 			// Clear loading message and create response div
 			container.innerHTML = '<div class="streaming-response"></div>';
 			const responseDiv = container.querySelector('.streaming-response');
 			
+			const reader = response.body
+				.pipeThrough(new TextDecoderStream())
+				.getReader();
+			
+			let buffer = '';
 			let accumulatedText = '';
 			
 			try {
 				while (true) {
 					const { done, value } = await reader.read();
+					if (done) {
+						if (buffer.trim()) {
+							console.warn('Stream ended with unparsed data:', buffer);
+						}
+						break;
+					}
 					
-					if (done) break;
+					buffer += value;
+					const lines = buffer.split('\n');
+					buffer = lines.pop() || '';
 					
-					// Decode the chunk
-					const text = decoder.decode(value, { stream: true });
-					accumulatedText += text;
-					
-					if (responseDiv) {
-						responseDiv.textContent = accumulatedText;
-						responseDiv.scrollTop = responseDiv.scrollHeight;
+					for (const line of lines) {
+						if (line.startsWith('data: ')) {
+							const data = line.slice(6).trim();
+							if (data === '[DONE]') break;
+							
+							try {
+								const jsonData = JSON.parse(data);
+								if (jsonData.response) {
+									accumulatedText += jsonData.response;
+									if (responseDiv) {
+										responseDiv.textContent = accumulatedText;
+										responseDiv.scrollTop = responseDiv.scrollHeight;
+									}
+								}
+							} catch (parseError) {
+								console.warn('Error parsing JSON:', parseError);
+							}
+						}
 					}
 				}
 			} finally {
