@@ -18,7 +18,19 @@ const result = await env.AI.autorag("aopa-rag").aiSearch({
 	stream: false, // Use non-streaming for now since we're using Astro's streaming
 });
 
-const response = await result.text();
+// Handle different response formats
+let response: string;
+if (typeof result === 'string') {
+	response = result;
+} else if (result && typeof result.text === 'function') {
+	response = await result.text();
+} else if (result && result.response) {
+	response = result.response;
+} else if (result && result.answer) {
+	response = result.answer;
+} else {
+	response = JSON.stringify(result, null, 2);
+}
 ---
 
 <div class="streaming-response">
