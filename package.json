@@ -12,7 +12,8 @@
 	},
 	"dependencies": {
 		"@astrojs/cloudflare": "^12.6.0",
-		"astro": "^5.10.0"
+		"astro": "^5.10.0",
+		"streaming-markdown": "^0.2.15"
 	},
 	"devDependencies": {
 		"@types/node": "^24.0.3",
