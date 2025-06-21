@@ -14,83 +14,122 @@ const query = url.searchParams.get('q') || '';
 		<meta name="generator" content={Astro.generator} />
 		<title>AutoRAG Streaming Demo</title>
 		<style>
+			:root {
+				--primary-color: #0066cc;
+				--hover-color: #0052a3;
+				--background-color: #ffffff;
+				--text-color: #333333;
+				--border-color: #ddd;
+			}
+			
 			body {
 				font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-				max-width: 800px;
-				margin: 0 auto;
-				padding: 20px;
+				margin: 0;
+				padding: 0;
 				line-height: 1.6;
+				color: var(--text-color);
+				background: var(--background-color);
 			}
-			.container {
-				background: #f9f9f9;
+
+			.initial-state {
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				justify-content: center;
+				min-height: 80vh;
 				padding: 20px;
-				border-radius: 8px;
-				margin-bottom: 20px;
 			}
+
+			.query-state {
+				padding: 20px;
+			}
+
+			.search-form-large {
+				width: 100%;
+				max-width: 600px;
+			}
+
+			.search-form-large input[type="text"] {
+				width: 100%;
+				padding: 15px;
+				font-size: 18px;
+				border: 2px solid var(--border-color);
+				border-radius: 8px;
+				margin-bottom: 15px;
+			}
+
+			.search-form-compact {
+				position: sticky;
+				top: 0;
+				background: var(--background-color);
+				padding: 10px 0;
+				display: flex;
+				gap: 10px;
+				margin-bottom: 20px;
+				z-index: 100;
+				border-bottom: 1px solid var(--border-color);
+			}
+
+			.search-form-compact input[type="text"] {
+				flex: 1;
+				padding: 8px 12px;
+				font-size: 16px;
+				border: 1px solid var(--border-color);
+				border-radius: 4px;
+			}
+
 			button {
-				background: #0066cc;
+				background: var(--primary-color);
 				color: white;
 				border: none;
-				padding: 10px 20px;
+				padding: 8px 20px;
 				border-radius: 4px;
 				cursor: pointer;
 				font-size: 16px;
+				transition: background-color 0.2s;
 			}
+
 			button:hover {
-				background: #0052a3;
+				background: var(--hover-color);
 			}
-			button:disabled {
-				background: #ccc;
-				cursor: not-allowed;
+
+			.response-container {
+				max-width: 800px;
+				margin: 0 auto;
 			}
-			input[type="text"] {
-				width: 100%;
-				padding: 10px;
-				border: 1px solid #ddd;
-				border-radius: 4px;
-				font-size: 16px;
-				margin-bottom: 10px;
-			}
-			.placeholder {
-				background: white;
-				border: 1px solid #ddd;
-				border-radius: 4px;
-				padding: 15px;
-				min-height: 100px;
-				color: #666;
-				font-style: italic;
-			}
-			.loading {
-				color: #666;
-				font-style: italic;
-			}
-			.error {
-				color: #d32f2f;
-				background: #ffebee;
-				padding: 10px;
-				border-radius: 4px;
+
+			@media (max-width: 600px) {
+				.search-form-compact {
+					padding: 10px;
+				}
+				
+				.search-form-large input[type="text"] {
+					font-size: 16px;
+					padding: 12px;
+				}
 			}
 		</style>
 	</head>
 	<body>
-		<h1>AutoRAG Streaming Demo</h1>
-		<p>This demo shows streaming responses from your <code>aopa-rag</code> AutoRAG instance.</p>
-		
-		<div class="container">
-			<form method="GET" action="/">
-				<input type="text" name="q" id="question" placeholder="Enter your question..." value={query || "What are the key topics in the knowledge base?"} />
-				<button type="submit">Ask Question</button>
-			</form>
-		</div>
-		
-		<div class="container">
-			<h3>Response:</h3>
-			{query ? (
-				<AutoRAGStream query={query} />
-			) : (
-				<div class="placeholder">Enter a question above to see a streaming response...</div>
-			)}
-		</div>
+		{!query ? (
+			<div class="initial-state">
+				<h1>AutoRAG Search</h1>
+				<form method="GET" action="/" class="search-form-large">
+					<input type="text" name="q" id="question" placeholder="What would you like to know?" autofocus />
+					<button type="submit">Search</button>
+				</form>
+			</div>
+		) : (
+			<div class="query-state">
+				<form method="GET" action="/" class="search-form-compact">
+					<input type="text" name="q" id="question" value={query} />
+					<button type="submit">Search</button>
+				</form>
+				<div class="response-container">
+					<AutoRAGStream query={query} />
+				</div>
+			</div>
+		)}
 
 	</body>
 </html>
