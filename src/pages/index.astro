@@ -114,8 +114,10 @@
 							throw new Error(`HTTP error! status: ${response.status}`);
 						}
 						
-						// Clear loading message
+						// Clear loading message and create a text node for streaming
 						responseDiv.innerHTML = '';
+						const textNode = document.createTextNode('');
+						responseDiv.appendChild(textNode);
 						
 						// Read the stream
 						const reader = response.body?.getReader();
@@ -127,13 +129,13 @@
 								if (done) break;
 								
 								const chunk = decoder.decode(value, { stream: true });
-								responseDiv.textContent += chunk;
+								textNode.textContent += chunk;
 								
 								// Auto-scroll to bottom
 								responseDiv.scrollTop = responseDiv.scrollHeight;
 								
 								// Force a repaint to show streaming effect
-								await new Promise(resolve => setTimeout(resolve, 0));
+								await new Promise(resolve => setTimeout(resolve, 10));
 							}
 						}
 					} catch (error) {
