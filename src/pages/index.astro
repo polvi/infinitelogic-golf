@@ -77,7 +77,7 @@
 			<label for="query">Enter your question:</label>
 			<textarea id="query" placeholder="Ask a question about your data...">What are the key topics in the knowledge base?</textarea>
 			<br><br>
-			<button id="submit" onclick="streamResponse()">Ask Question</button>
+			<button id="submit">Ask Question</button>
 		</div>
 		
 		<div class="container">
@@ -86,65 +86,70 @@
 		</div>
 
 		<script>
-			async function streamResponse() {
-				const query = document.getElementById('query').value.trim();
-				const responseDiv = document.getElementById('response');
-				const submitButton = document.getElementById('submit');
-				
-				if (!query) {
-					responseDiv.innerHTML = '<div class="error">Please enter a question.</div>';
-					return;
-				}
-				
-				// Reset and show loading
-				responseDiv.innerHTML = '<div class="loading">Streaming response...</div>';
-				submitButton.disabled = true;
-				
-				try {
-					const response = await fetch('/api/stream', {
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json',
-						},
-						body: JSON.stringify({ query }),
-					});
+			document.addEventListener('DOMContentLoaded', function() {
+				async function streamResponse() {
+					const query = document.getElementById('query').value.trim();
+					const responseDiv = document.getElementById('response');
+					const submitButton = document.getElementById('submit');
 					
-					if (!response.ok) {
-						throw new Error(`HTTP error! status: ${response.status}`);
+					if (!query) {
+						responseDiv.innerHTML = '<div class="error">Please enter a question.</div>';
+						return;
 					}
 					
-					// Clear loading message
-					responseDiv.innerHTML = '';
+					// Reset and show loading
+					responseDiv.innerHTML = '<div class="loading">Streaming response...</div>';
+					submitButton.disabled = true;
 					
-					// Read the stream
-					const reader = response.body?.getReader();
-					const decoder = new TextDecoder();
-					
-					if (reader) {
-						while (true) {
-							const { done, value } = await reader.read();
-							if (done) break;
-							
-							const chunk = decoder.decode(value, { stream: true });
-							responseDiv.innerHTML += chunk;
-							
-							// Auto-scroll to bottom
-							responseDiv.scrollTop = responseDiv.scrollHeight;
+					try {
+						const response = await fetch('/api/stream', {
+							method: 'POST',
+							headers: {
+								'Content-Type': 'application/json',
+							},
+							body: JSON.stringify({ query }),
+						});
+						
+						if (!response.ok) {
+							throw new Error(`HTTP error! status: ${response.status}`);
 						}
+						
+						// Clear loading message
+						responseDiv.innerHTML = '';
+						
+						// Read the stream
+						const reader = response.body?.getReader();
+						const decoder = new TextDecoder();
+						
+						if (reader) {
+							while (true) {
+								const { done, value } = await reader.read();
+								if (done) break;
+								
+								const chunk = decoder.decode(value, { stream: true });
+								responseDiv.innerHTML += chunk;
+								
+								// Auto-scroll to bottom
+								responseDiv.scrollTop = responseDiv.scrollHeight;
+							}
+						}
+					} catch (error) {
+						console.error('Error:', error);
+						responseDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+					} finally {
+						submitButton.disabled = false;
 					}
-				} catch (error) {
-					console.error('Error:', error);
-					responseDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
-				} finally {
-					submitButton.disabled = false;
 				}
-			}
-			
-			// Allow Enter key to submit
-			document.getElementById('query').addEventListener('keydown', function(e) {
-				if (e.key === 'Enter' && e.ctrlKey) {
-					streamResponse();
-				}
+				
+				// Add event listener to submit button
+				document.getElementById('submit').addEventListener('click', streamResponse);
+				
+				// Allow Enter key to submit
+				document.getElementById('query').addEventListener('keydown', function(e) {
+					if (e.key === 'Enter' && e.ctrlKey) {
+						streamResponse();
+					}
+				});
 			});
 		</script>
 	</body>
