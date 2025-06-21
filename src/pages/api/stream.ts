@@ -27,26 +27,30 @@ export const POST: APIRoute = async ({ request, locals }) => {
 				const decoder = new TextDecoder();
 				const text = decoder.decode(chunk);
 				
-				// Split by lines and process each SSE event
+				// Accumulate chunks until we have complete JSON objects
+				let buffer = '';
 				const lines = text.split('\n');
+				
 				for (const line of lines) {
 					if (line.startsWith('data: ')) {
 						const dataStr = line.slice(6); // Remove 'data: ' prefix
 						
-						// Skip [DONE] marker
 						if (dataStr.trim() === '[DONE]') {
 							continue;
 						}
+
+						buffer += dataStr;
 						
 						try {
-							const data = JSON.parse(dataStr);
+							// Try to parse accumulated buffer
+							const data = JSON.parse(buffer);
 							if (data.response) {
-								// Send just the response text
 								controller.enqueue(new TextEncoder().encode(data.response));
+								buffer = ''; // Reset buffer after successful parse
 							}
 						} catch (e) {
-							// Skip malformed JSON
-							console.warn('Failed to parse SSE data:', dataStr);
+							// If parse fails, keep accumulating
+							continue;
 						}
 					}
 				}
