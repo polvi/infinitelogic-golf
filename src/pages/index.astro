@@ -1,5 +1,9 @@
 ---
+import StreamingResponse from '../components/StreamingResponse.astro';
 
+// Get query from URL params for streaming
+const url = new URL(Astro.request.url);
+const query = url.searchParams.get('q') || '';
 ---
 
 <html lang="en">
@@ -47,14 +51,14 @@
 				font-size: 16px;
 				margin-bottom: 10px;
 			}
-			#response {
+			.placeholder {
 				background: white;
 				border: 1px solid #ddd;
 				border-radius: 4px;
 				padding: 15px;
 				min-height: 100px;
-				white-space: pre-wrap;
-				font-family: 'Courier New', monospace;
+				color: #666;
+				font-style: italic;
 			}
 			.loading {
 				color: #666;
@@ -73,81 +77,20 @@
 		<p>This demo shows streaming responses from your <code>aopa-rag</code> AutoRAG instance.</p>
 		
 		<div class="container">
-			<input type="text" id="question" placeholder="Enter your question..." value="What are the key topics in the knowledge base?" />
-			<button id="submit">Ask Question</button>
+			<form method="GET" action="/">
+				<input type="text" name="q" id="question" placeholder="Enter your question..." value={query || "What are the key topics in the knowledge base?"} />
+				<button type="submit">Ask Question</button>
+			</form>
 		</div>
 		
 		<div class="container">
 			<h3>Response:</h3>
-			<div id="response">Click "Ask Question" to see a streaming response...</div>
+			{query ? (
+				<StreamingResponse query={query} />
+			) : (
+				<div class="placeholder">Enter a question above to see a streaming response...</div>
+			)}
 		</div>
 
-		<script>
-			document.addEventListener('DOMContentLoaded', function() {
-				async function streamResponse() {
-					const questionInput = document.getElementById('question');
-					const query = questionInput.value.trim();
-					const responseDiv = document.getElementById('response');
-					const submitButton = document.getElementById('submit');
-					
-					if (!query) {
-						responseDiv.innerHTML = '<div class="error">Please enter a question.</div>';
-						return;
-					}
-					
-					// Reset and show loading
-					responseDiv.innerHTML = '<div class="loading">Streaming response...</div>';
-					submitButton.disabled = true;
-					
-					try {
-						const response = await fetch('/api/stream', {
-							method: 'POST',
-							headers: {
-								'Content-Type': 'application/json',
-							},
-							body: JSON.stringify({ query }),
-						});
-						
-						if (!response.ok) {
-							throw new Error(`HTTP error! status: ${response.status}`);
-						}
-						
-						// Clear loading message and create a text node for streaming
-						responseDiv.innerHTML = '';
-						const textNode = document.createTextNode('');
-						responseDiv.appendChild(textNode);
-						
-						// Read the stream
-						const reader = response.body?.getReader();
-						const decoder = new TextDecoder();
-						
-						if (reader) {
-							while (true) {
-								const { done, value } = await reader.read();
-								if (done) break;
-								
-								const chunk = decoder.decode(value, { stream: true });
-								textNode.textContent += chunk;
-								
-								// Auto-scroll to bottom
-								responseDiv.scrollTop = responseDiv.scrollHeight;
-								
-								// Force a repaint to show streaming effect
-								await new Promise(resolve => setTimeout(resolve, 10));
-							}
-						}
-					} catch (error) {
-						console.error('Error:', error);
-						responseDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
-					} finally {
-						submitButton.disabled = false;
-					}
-				}
-				
-				// Add event listener to submit button
-				document.getElementById('submit').addEventListener('click', streamResponse);
-				
-			});
-		</script>
 	</body>
 </html>
