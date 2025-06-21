@@ -12,12 +12,17 @@ const { query } = Astro.props;
 
 <script>
 	async function streamResponse() {
+		console.log('Client: Starting stream response');
 		const container = document.getElementById('streaming-container');
 		const query = container?.getAttribute('data-query');
 		
-		if (!query || !container) return;
+		if (!query || !container) {
+			console.log('Client: Missing query or container');
+			return;
+		}
 
 		try {
+			console.log('Client: Calling API with query:', query);
 			// Call AutoRAG streaming endpoint
 			const response = await fetch('/api/stream', {
 				method: 'POST',
@@ -27,14 +32,17 @@ const { query } = Astro.props;
 				body: JSON.stringify({ query }),
 			});
 
+			console.log('Client: Got API response:', response.status);
 			if (!response.ok) {
 				throw new Error(`HTTP ${response.status}: ${response.statusText}`);
 			}
 
 			if (!response.body) {
+				console.log('Client: No response body');
 				throw new Error('No response body');
 			}
 
+			console.log('Client: Setting up stream processing');
 			// Clear loading message and create response div
 			container.innerHTML = '<div class="streaming-response"></div>';
 			const responseDiv = container.querySelector('.streaming-response');
@@ -49,6 +57,7 @@ const { query } = Astro.props;
 			try {
 				while (true) {
 					const { done, value } = await reader.read();
+					console.log('Client: Read chunk:', { done, valueLength: value?.length });
 					if (done) {
 						if (buffer.trim()) {
 							console.warn('Stream ended with unparsed data:', buffer);
@@ -66,8 +75,10 @@ const { query } = Astro.props;
 							if (data === '[DONE]') break;
 							
 							try {
+								console.log('Client: Processing data line:', data);
 								const jsonData = JSON.parse(data);
 								if (jsonData.response) {
+									console.log('Client: Got response chunk:', jsonData.response);
 									accumulatedText += jsonData.response;
 									if (responseDiv) {
 										responseDiv.textContent = accumulatedText;
@@ -75,7 +86,7 @@ const { query } = Astro.props;
 									}
 								}
 							} catch (parseError) {
-								console.warn('Error parsing JSON:', parseError);
+								console.warn('Error parsing JSON:', parseError, 'Data:', data);
 							}
 						}
 					}
