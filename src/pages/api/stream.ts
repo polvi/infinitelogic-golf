@@ -21,8 +21,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
 			stream: true,
 		});
 		
-		// Return the streaming response with appropriate headers
-		return new Response(result, {
+		// The result is already a Response object with a stream, so we need to return it directly
+		// but with our custom headers
+		return new Response(result.body, {
 			headers: {
 				'Content-Type': 'text/plain; charset=utf-8',
 				'Cache-Control': 'no-cache',
