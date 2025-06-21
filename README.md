@@ -1,45 +1,61 @@
-# Astro Starter Kit: Minimal
+# AutoRAG Search Interface
 
-```sh
-npm create astro@latest -- --template minimal
+A streamlined search interface for Cloudflare's AutoRAG system, built with Astro. Features include:
+
+- Real-time streaming responses
+- Infinite scroll with context-aware follow-up queries
+- Markdown rendering support
+- Responsive design with mobile optimization
+
+## Setup
+
+1. Install dependencies:
+```bash
+npm install
 ```
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/withastro/astro/tree/latest/examples/minimal)
-[![Open with CodeSandbox](https://assets.codesandbox.io/github/button-edit-lime.svg)](https://codesandbox.io/p/sandbox/github/withastro/astro/tree/latest/examples/minimal)
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/withastro/astro?devcontainer_path=.devcontainer/minimal/devcontainer.json)
+2. Configure Cloudflare:
+- Ensure you have a Cloudflare account with AutoRAG enabled
+- Set up your AutoRAG instance with the ID "aopa-rag"
+- Configure your wrangler.jsonc with appropriate AI bindings
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+## Development
 
-## 🚀 Project Structure
+Run locally with Wrangler for full Cloudflare Workers functionality:
 
-Inside of your Astro project, you'll see the following folders and files:
+```bash
+npm run build && npx wrangler pages dev ./dist
+```
+
+This will start the development server with Cloudflare Workers support, typically at `localhost:8788`.
+
+## Project Structure
 
 ```text
 /
-├── public/
 ├── src/
+│   ├── components/
+│   │   └── AutoRAGStream.astro   # Main streaming component
 │   └── pages/
-│       └── index.astro
-└── package.json
+│       ├── index.astro           # Main search interface
+│       └── api/
+│           └── stream.ts         # Streaming API endpoint
+├── astro.config.mjs              # Astro configuration
+└── wrangler.jsonc               # Cloudflare Workers configuration
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+## Production Deployment
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+Deploy to Cloudflare Pages:
 
-Any static assets, like images, can be placed in the `public/` directory.
+```bash
+npm run build
+npx wrangler pages deploy dist
+```
 
-## 🧞 Commands
+## Environment Variables
 
-All commands are run from the root of the project, from a terminal:
+The following bindings need to be configured in your Cloudflare dashboard:
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
-| `npx astro build && npx wrangler pages dev ./dist` | Run with wrangler | 
+- `AI`: Cloudflare AI binding for AutoRAG functionality
 
