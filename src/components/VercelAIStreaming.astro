@@ -65,11 +65,13 @@ const { query } = Astro.props;
 						break;
 					}
 					
+					console.log('Client: Raw value:', value);
 					buffer += value;
 					const lines = buffer.split('\n');
 					buffer = lines.pop() || '';
 					
 					for (const line of lines) {
+						console.log('Client: Processing line:', line);
 						if (line.startsWith('data: ')) {
 							const data = line.slice(6).trim();
 							if (data === '[DONE]') break;

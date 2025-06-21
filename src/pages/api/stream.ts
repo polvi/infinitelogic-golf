@@ -24,11 +24,23 @@ export const POST: APIRoute = async ({ request, locals }) => {
 			query: query,
 			stream: true,
 		});
-		console.log('API: Got AutoRAG result:', typeof result);
+		console.log('API: Got AutoRAG result:', typeof result, result);
 
-		// Return the raw stream directly
+		// If result is already a Response, return its body as a new Response
+		if (result instanceof Response) {
+			console.log('API: Converting Response to stream');
+			return new Response(result.body, {
+				headers: {
+					'Content-Type': 'text/event-stream',
+					'Cache-Control': 'no-cache',
+					'Connection': 'keep-alive',
+				},
+			});
+		}
+
+		// If it's already a ReadableStream, return it directly
 		console.log('API: Returning stream response');
-		return new Response(result as ReadableStream, {
+		return new Response(result, {
 			headers: {
 				'Content-Type': 'text/event-stream',
 				'Cache-Control': 'no-cache',
