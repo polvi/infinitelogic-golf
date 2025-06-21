@@ -127,10 +127,13 @@
 								if (done) break;
 								
 								const chunk = decoder.decode(value, { stream: true });
-								responseDiv.innerHTML += chunk;
+								responseDiv.textContent += chunk;
 								
 								// Auto-scroll to bottom
 								responseDiv.scrollTop = responseDiv.scrollHeight;
+								
+								// Force a repaint to show streaming effect
+								await new Promise(resolve => setTimeout(resolve, 0));
 							}
 						}
 					} catch (error) {
