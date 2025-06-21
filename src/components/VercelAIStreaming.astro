@@ -1,0 +1,93 @@
+---
+export interface Props {
+	query: string;
+}
+
+const { query } = Astro.props;
+---
+
+<div id="streaming-container" data-query={query}>
+	<div class="loading">Generating response...</div>
+</div>
+
+<script>
+	import { createWorkersAI } from 'workers-ai-provider';
+	import { streamText } from 'ai';
+
+	async function streamResponse() {
+		const container = document.getElementById('streaming-container');
+		const query = container?.getAttribute('data-query');
+		
+		if (!query || !container) return;
+
+		try {
+			// Get the AI binding from the runtime context
+			const response = await fetch('/api/stream', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({ query }),
+			});
+
+			if (!response.body) {
+				throw new Error('No response body');
+			}
+
+			const reader = response.body.getReader();
+			const decoder = new TextDecoder();
+			
+			// Clear loading message
+			container.innerHTML = '<div class="streaming-response"></div>';
+			const responseDiv = container.querySelector('.streaming-response');
+			
+			while (true) {
+				const { done, value } = await reader.read();
+				
+				if (done) break;
+				
+				const chunk = decoder.decode(value);
+				if (responseDiv) {
+					responseDiv.textContent += chunk;
+				}
+			}
+		} catch (error) {
+			console.error('Streaming error:', error);
+			container.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+		}
+	}
+
+	// Start streaming when the component loads
+	streamResponse();
+</script>
+
+<style>
+	.streaming-response {
+		background: white;
+		border: 1px solid #ddd;
+		border-radius: 4px;
+		padding: 15px;
+		min-height: 100px;
+		white-space: pre-wrap;
+		font-family: 'Courier New', monospace;
+		animation: fadeIn 0.3s ease-in;
+	}
+	
+	.loading {
+		color: #666;
+		font-style: italic;
+		padding: 15px;
+	}
+	
+	.error {
+		color: #d32f2f;
+		background: #ffebee;
+		padding: 10px;
+		border-radius: 4px;
+	}
+	
+	@keyframes fadeIn {
+		from { opacity: 0; }
+		to { opacity: 1; }
+	}
+</style>

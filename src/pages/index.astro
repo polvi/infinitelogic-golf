@@ -1,5 +1,5 @@
 ---
-import StreamingResponse from '../components/StreamingResponse.astro';
+import VercelAIStreaming from '../components/VercelAIStreaming.astro';
 
 // Get query from URL params for streaming
 const url = new URL(Astro.request.url);
@@ -86,7 +86,7 @@ const query = url.searchParams.get('q') || '';
 		<div class="container">
 			<h3>Response:</h3>
 			{query ? (
-				<StreamingResponse query={query} />
+				<VercelAIStreaming query={query} />
 			) : (
 				<div class="placeholder">Enter a question above to see a streaming response...</div>
 			)}
