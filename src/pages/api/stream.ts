@@ -21,9 +21,41 @@ export const POST: APIRoute = async ({ request, locals }) => {
 			stream: true,
 		});
 
+		// Create a transform stream to parse SSE format and extract response text
+		const transformStream = new TransformStream({
+			transform(chunk, controller) {
+				const decoder = new TextDecoder();
+				const text = decoder.decode(chunk);
+				
+				// Split by lines and process each SSE event
+				const lines = text.split('\n');
+				for (const line of lines) {
+					if (line.startsWith('data: ')) {
+						const dataStr = line.slice(6); // Remove 'data: ' prefix
+						
+						// Skip [DONE] marker
+						if (dataStr.trim() === '[DONE]') {
+							continue;
+						}
+						
+						try {
+							const data = JSON.parse(dataStr);
+							if (data.response) {
+								// Send just the response text
+								controller.enqueue(new TextEncoder().encode(data.response));
+							}
+						} catch (e) {
+							// Skip malformed JSON
+							console.warn('Failed to parse SSE data:', dataStr);
+						}
+					}
+				}
+			}
+		});
+
 		// Check if result is a Response object with a readable stream
 		if (result instanceof Response && result.body) {
-			return new Response(result.body, {
+			return new Response(result.body.pipeThrough(transformStream), {
 				headers: {
 					'Content-Type': 'text/plain; charset=utf-8',
 					'Transfer-Encoding': 'chunked',
@@ -33,7 +65,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
 		// If it's not a Response object, try to handle it as a ReadableStream
 		if (result && typeof result.getReader === 'function') {
-			return new Response(result, {
+			return new Response(result.pipeThrough(transformStream), {
 				headers: {
 					'Content-Type': 'text/plain; charset=utf-8',
 					'Transfer-Encoding': 'chunked',
