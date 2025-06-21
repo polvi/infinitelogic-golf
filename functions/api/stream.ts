@@ -2,7 +2,7 @@ interface Env {
 	AI: Ai;
 }
 
-export const onRequestPost: PagesFunction<Env> = async (context) => {
+export const onRequestPost = async (context: { request: Request; env: Env }) => {
 	try {
 		const { query } = await context.request.json() as { query: string };
 		
@@ -39,7 +39,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 	}
 };
 
-export const onRequestOptions: PagesFunction = async () => {
+export const onRequestOptions = async () => {
 	return new Response(null, {
 		headers: {
 			'Access-Control-Allow-Origin': '*',
