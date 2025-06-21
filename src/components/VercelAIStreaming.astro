@@ -11,6 +11,7 @@ const { query } = Astro.props;
 </div>
 
 <script>
+	import * as smd from "streaming-markdown";
 	async function streamResponse() {
 		const container = document.getElementById('streaming-container');
 		const query = container?.getAttribute('data-query');
@@ -40,12 +41,15 @@ const { query } = Astro.props;
 			container.innerHTML = '<div class="streaming-response"></div>';
 			const responseDiv = container.querySelector('.streaming-response');
 			
+			// Initialize markdown parser
+			const renderer = smd.default_renderer(responseDiv);
+			const markdownParser = smd.parser(renderer);
+			
 			const reader = response.body
 				.pipeThrough(new TextDecoderStream())
 				.getReader();
 			
 			let buffer = '';
-			let accumulatedText = '';
 			
 			try {
 				while (true) {
@@ -54,6 +58,7 @@ const { query } = Astro.props;
 						if (buffer.trim()) {
 							console.warn('Stream ended with unparsed data:', buffer);
 						}
+						smd.parser_end(markdownParser);
 						break;
 					}
 					
@@ -64,14 +69,16 @@ const { query } = Astro.props;
 					for (const line of lines) {
 						if (line.startsWith('data: ')) {
 							const data = line.slice(6).trim();
-							if (data === '[DONE]') break;
+							if (data === '[DONE]') {
+								smd.parser_end(markdownParser);
+								break;
+							}
 							
 							try {
 								const jsonData = JSON.parse(data);
 								if (jsonData.response) {
-									accumulatedText += jsonData.response;
+									smd.parser_write(markdownParser, jsonData.response);
 									if (responseDiv) {
-										responseDiv.textContent = accumulatedText;
 										responseDiv.scrollTop = responseDiv.scrollHeight;
 									}
 								}
