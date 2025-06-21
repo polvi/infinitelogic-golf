@@ -8,17 +8,17 @@ export const POST: APIRoute = async ({ request, locals }) => {
 			return new Response('Query is required', { status: 400 });
 		}
 		
-		// Access the AI binding from locals (set by Cloudflare adapter)
-		const AI = (locals.runtime?.env as any)?.AI;
+		// Access the AI binding from Cloudflare runtime
+		const { env } = locals.runtime;
 		
-		if (!AI) {
+		if (!env?.AI) {
 			return new Response('AI binding not available', { status: 500 });
 		}
 		
 		// Use your AutoRAG with streaming enabled
-		const result = await AI.autorag("aopa-rag").aiSearch({
+		const result = await env.AI.autorag("aopa-rag").aiSearch({
 			query: query,
-			model: "@cf/meta/llama-3.1-8b-instruct",
+			model: "@cf/meta/llama-3.3-70b-instruct-sd",
 			rewrite_query: true,
 			max_num_results: 5,
 			ranking_options: {
