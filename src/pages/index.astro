@@ -51,11 +51,18 @@ const query = url.searchParams.get('q') || '';
 
 			.search-form-large input[type="text"] {
 				width: 100%;
-				padding: 15px;
-				font-size: 18px;
-				border: 2px solid var(--border-color);
-				border-radius: 8px;
+				padding: 12px;
+				font-size: 16px;
+				border: 1px solid var(--border-color);
+				border-radius: 4px;
 				margin-bottom: 15px;
+				background: #f5f5f5;
+			}
+
+			.search-form-large input[type="text"]:focus {
+				background: white;
+				outline: none;
+				border-color: var(--primary-color);
 			}
 
 			.search-form-compact {
@@ -72,10 +79,17 @@ const query = url.searchParams.get('q') || '';
 
 			.search-form-compact input[type="text"] {
 				flex: 1;
-				padding: 8px 12px;
-				font-size: 16px;
+				padding: 6px 12px;
+				font-size: 14px;
 				border: 1px solid var(--border-color);
 				border-radius: 4px;
+				background: #f5f5f5;
+			}
+
+			.search-form-compact input[type="text"]:focus {
+				background: white;
+				outline: none;
+				border-color: var(--primary-color);
 			}
 
 			button {
@@ -113,9 +127,8 @@ const query = url.searchParams.get('q') || '';
 	<body>
 		{!query ? (
 			<div class="initial-state">
-				<h1>AutoRAG Search</h1>
 				<form method="GET" action="/" class="search-form-large">
-					<input type="text" name="q" id="question" placeholder="What would you like to know?" autofocus />
+					<input type="text" name="q" id="question" placeholder="Search knowledge base..." autofocus />
 					<button type="submit">Search</button>
 				</form>
 			</div>
