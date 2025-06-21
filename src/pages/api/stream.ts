@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 
 export const POST: APIRoute = async ({ request, locals }) => {
 	try {
-		const { query } = await request.json();
+		const { query, isFollowUp, previousResponse } = await request.json();
 		
 		if (!query) {
 			return new Response('Query is required', { status: 400 });
@@ -15,9 +15,14 @@ export const POST: APIRoute = async ({ request, locals }) => {
 			return new Response('AI binding not available', { status: 500 });
 		}
 
+		// Modify query for follow-ups to maintain context
+		const finalQuery = isFollowUp 
+			? `Based on this previous context: "${previousResponse}", ${query}. Please provide new information that wasn't covered before.`
+			: query;
+
 		// Use AutoRAG's streaming functionality
 		const result = await env.AI.autorag("aopa-rag").aiSearch({
-			query: query,
+			query: finalQuery,
 			stream: true,
 		});
 

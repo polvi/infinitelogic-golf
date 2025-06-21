@@ -8,16 +8,26 @@ const { query } = Astro.props;
 
 <div id="streaming-container" data-query={query}>
 	<div class="loading">Generating response...</div>
+	<div id="responses-container"></div>
+	<button id="load-more" class="load-more-btn" style="display: none;">Load More Insights</button>
 </div>
 
 <script>
 	import * as smd from "streaming-markdown";
-	async function streamResponse() {
+	let lastResponse = '';
+	let isFirstResponse = true;
+
+	async function streamResponse(followUpQuery = null) {
 		const container = document.getElementById('streaming-container');
-		const query = container?.getAttribute('data-query');
+		const responsesContainer = document.getElementById('responses-container');
+		const loadMoreBtn = document.getElementById('load-more');
+		let query = followUpQuery;
 		
-		if (!query || !container) {
-			return;
+		if (!followUpQuery) {
+			query = container?.getAttribute('data-query');
+			if (!query || !container) {
+				return;
+			}
 		}
 
 		try {
@@ -27,7 +37,11 @@ const { query } = Astro.props;
 				headers: {
 					'Content-Type': 'application/json',
 				},
-				body: JSON.stringify({ query }),
+				body: JSON.stringify({ 
+					query,
+					isFollowUp: !isFirstResponse,
+					previousResponse: lastResponse
+				}),
 			});
 
 			if (!response.ok) {
@@ -38,8 +52,12 @@ const { query } = Astro.props;
 				throw new Error('No response body');
 			}
 			// Clear loading message and create response div
-			container.innerHTML = '<div class="streaming-response"></div>';
-			const responseDiv = container.querySelector('.streaming-response');
+			if (isFirstResponse) {
+				responsesContainer.innerHTML = '';
+			}
+			const responseDiv = document.createElement('div');
+			responseDiv.className = 'streaming-response';
+			responsesContainer.appendChild(responseDiv);
 			
 			// Initialize markdown parser
 			const renderer = smd.default_renderer(responseDiv);
@@ -90,6 +108,11 @@ const { query } = Astro.props;
 				}
 			} finally {
 				reader.releaseLock();
+				if (isFirstResponse) {
+					loadMoreBtn.style.display = 'block';
+					isFirstResponse = false;
+				}
+				lastResponse = responseDiv.textContent;
 			}
 		} catch (error) {
 			console.error('AutoRAG Streaming error:', error);
@@ -99,9 +122,44 @@ const { query } = Astro.props;
 
 	// Start streaming when the component loads
 	streamResponse();
+
+	// Add click handler for load more button
+	document.getElementById('load-more').addEventListener('click', async () => {
+		const button = document.getElementById('load-more');
+		button.disabled = true;
+		button.textContent = 'Loading...';
+		
+		try {
+			await streamResponse(`Based on this previous response: "${lastResponse}", please provide more detailed insights and information about this topic.`);
+		} finally {
+			button.disabled = false;
+			button.textContent = 'Load More Insights';
+		}
+	});
 </script>
 
 <style>
+	.load-more-btn {
+		background: #0066cc;
+		color: white;
+		border: none;
+		padding: 10px 20px;
+		border-radius: 4px;
+		cursor: pointer;
+		font-size: 16px;
+		margin: 10px 0;
+		display: block;
+		margin: 20px auto;
+	}
+
+	.load-more-btn:hover {
+		background: #0052a3;
+	}
+
+	.load-more-btn:disabled {
+		background: #ccc;
+		cursor: not-allowed;
+	}
 	.streaming-response {
 		background: white;
 		border: 1px solid #ddd;
