@@ -17,7 +17,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
 		// Modify query for follow-ups to maintain context
 		const finalQuery = isFollowUp 
-			? `Based on this previous context: "${previousResponse}", ${query}. Please provide new information that wasn't covered before.`
+			? `Based on this previous context: "${previousResponse}", ${query}. Important: Provide entirely new information that hasn't been mentioned before. Focus on different but related aspects of the topic. Do not repeat any previous information. If there are no new aspects to discuss, indicate that all relevant information has been covered.`
 			: query;
 
 		// Use AutoRAG's streaming functionality

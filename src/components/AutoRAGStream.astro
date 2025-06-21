@@ -130,7 +130,7 @@ const { query } = Astro.props;
 		button.textContent = 'Loading...';
 		
 		try {
-			await streamResponse(`Based on this previous response: "${lastResponse}", please provide more detailed insights and information about this topic.`);
+			await streamResponse(`Based on this previous response: "${lastResponse}", please provide new and different information about this topic. Focus on aspects that haven't been mentioned yet while staying relevant to the original query. Do not repeat any previous information.`);
 		} finally {
 			button.disabled = false;
 			button.textContent = 'Load More Insights';
