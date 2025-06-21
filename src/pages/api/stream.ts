@@ -21,11 +21,31 @@ export const POST: APIRoute = async ({ request, locals }) => {
 			stream: true,
 		});
 
-		// Return the streaming response from AutoRAG
-		return new Response(result, {
+		// Check if result is a Response object with a readable stream
+		if (result instanceof Response && result.body) {
+			return new Response(result.body, {
+				headers: {
+					'Content-Type': 'text/plain; charset=utf-8',
+					'Transfer-Encoding': 'chunked',
+				},
+			});
+		}
+
+		// If it's not a Response object, try to handle it as a ReadableStream
+		if (result && typeof result.getReader === 'function') {
+			return new Response(result, {
+				headers: {
+					'Content-Type': 'text/plain; charset=utf-8',
+					'Transfer-Encoding': 'chunked',
+				},
+			});
+		}
+
+		// Fallback: convert to string if it's not streamable
+		const text = typeof result === 'string' ? result : JSON.stringify(result);
+		return new Response(text, {
 			headers: {
 				'Content-Type': 'text/plain; charset=utf-8',
-				'Transfer-Encoding': 'chunked',
 			},
 		});
 	} catch (error) {
